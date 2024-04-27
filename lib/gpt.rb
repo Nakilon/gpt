@@ -1,5 +1,6 @@
 require "nethttputils"
 require "json"
+require "nakischema"
 require "logger"
 require "base64"
 
@@ -59,6 +60,73 @@ module GPT
         } },
       } }
     end["choices"][0]["message"]["content"]
+  end
+
+  def self.yagpt catalog, secret, query, system_message, context = nil, temperature: 0.5
+    form = {
+      "modelUri" => "gpt://#{catalog}/yandexgpt-pro",
+      "completionOptions" => {
+        "stream" => false,
+        "temperature" => temperature,
+        "maxTokens" => "150",
+      },
+      "messages" => [
+        {"role" => "system", "text" => system_message},
+        *context,
+        {"role" => "user", "text" => query},
+      ],
+    }
+    json = begin
+      ::NetHTTPUtils.request_data "https://llm.api.cloud.yandex.net/foundationModels/v1/completionAsync", :POST, :json,
+        max_start_http_retry_delay: 300,
+        header: {"Authorization" => "Api-Key #{secret}"},
+        form: form
+    end.then &::JSON.method(:load)
+    ::Timeout.timeout 60 do
+      while ::Nakischema.valid? json, { hash: {
+        "id" => /\A\S+\z/,
+        "description" => "Async GPT Completion",
+        "createdAt" => /\A\S+\z/,
+        "createdBy" => /\A\S+\z/,
+        "modifiedAt" => /\A\S+\z/,
+        "done" => false,
+        "metadata" => nil,
+      } }
+        sleep 0.1
+        json = begin
+          ::NetHTTPUtils.request_data "https://llm.api.cloud.yandex.net/operations/#{json["id"]}",
+            max_start_http_retry_delay: 300,
+            header: {"Authorization" => "Api-Key #{secret}"}
+        end.then &::JSON.method(:load)
+      end
+    end
+    @logger.debug ::JSON.dump [form, json]
+    ::Nakischema.validate json, { hash: {
+      "id" => /\A\S+\z/,
+      "description" => "Async GPT Completion",
+      "createdAt" => /\A\S+\z/,
+      "createdBy" => /\A\S+\z/,
+      "modifiedAt" => /\A\S+\z/,
+      "done" => true,
+      "metadata" => nil,
+      "response" => { hash: {
+        "@type" => "type.googleapis.com/yandex.cloud.ai.foundation_models.v1.CompletionResponse",
+        "alternatives" => [[ { hash: {
+          "message" => { hash: {
+            "role" => "assistant",
+            "text" => ::String,
+          } },
+          "status" => "ALTERNATIVE_STATUS_FINAL",
+        } } ]],
+        "usage" => { hash: {
+          "inputTextTokens" => /\A\d+\z/,
+          "completionTokens" => /\A\d+\z/,
+          "totalTokens" => /\A\d+\z/,
+        } },
+        "modelVersion" => ::String,
+      } },
+    } }
+    json["response"]["alternatives"][0]["message"]["text"]
   end
 
 end
