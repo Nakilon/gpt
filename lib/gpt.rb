@@ -64,7 +64,7 @@ module GPT
 
   def self.yagpt catalog, secret, query, system_message, context = nil, temperature: 0.5
     form = {
-      "modelUri" => "gpt://#{catalog}/yandexgpt-pro",
+      "modelUri" => "gpt://#{catalog}/yandexgpt/latest",
       "completionOptions" => {
         "stream" => false,
         "temperature" => temperature,
