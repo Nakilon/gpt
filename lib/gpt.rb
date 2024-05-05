@@ -82,7 +82,8 @@ module GPT
         header: {"Authorization" => "Api-Key #{secret}"},
         form: form
     end.then &::JSON.method(:load)
-    ::Timeout.timeout 60 do
+    ::Timeout.timeout 120 do
+      t = 0.05
       while ::Nakischema.valid? json, { hash: {
         "id" => /\A\S+\z/,
         "description" => "Async GPT Completion",
@@ -92,7 +93,7 @@ module GPT
         "done" => false,
         "metadata" => nil,
       } }
-        sleep 0.1
+        sleep t *= 2
         json = begin
           ::NetHTTPUtils.request_data "https://llm.api.cloud.yandex.net/operations/#{json["id"]}",
             max_start_http_retry_delay: 300,
