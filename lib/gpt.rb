@@ -117,7 +117,7 @@ module GPT
             "role" => "assistant",
             "text" => ::String,
           } },
-          "status" => "ALTERNATIVE_STATUS_FINAL",
+          "status" => %w{ ALTERNATIVE_STATUS_FINAL ALTERNATIVE_STATUS_CONTENT_FILTER },
         } } ]],
         "usage" => { hash: {
           "inputTextTokens" => /\A\d+\z/,
