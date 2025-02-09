@@ -43,7 +43,6 @@ module GPT
       ::Nakischema.validate json, { hash_req: {
         "choices" => [[
           { hash_req: {
-            "finish_reason" => ["stop", "length", nil],
             "index" => 0..0,
             "message" => {
               hash_req: {
