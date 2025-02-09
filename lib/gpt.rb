@@ -45,7 +45,12 @@ module GPT
           { hash_req: {
             "finish_reason" => ["stop", "length", nil],
             "index" => 0..0,
-            "message" => { hash: {"content" => ::String, "role" => "assistant"} },
+            "message" => {
+              hash_req: {
+                "content" => ::String,
+                "role" => "assistant",
+              }
+            },
           } },
         ]],
         "created" => ::Integer,
